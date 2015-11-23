@@ -8,7 +8,7 @@ This client feeds Google Search Appliance (GSA) with information coming from a G
 > GitHub Enterprise has its own Web Search engine, so we don't want to have ALL github contents duplicated into GSA.
 > In case of hundreds of repositories we're going to saturate GSA index with millions of new references 
 
-** So, what Github information is going to appear in GSA?**
+**So, what Github information is going to appear in GSA?**
 > README.md contents and Organizations & Repository descriptions.
 
 
@@ -55,7 +55,7 @@ Metadata pushed with the GitHub information:
 
 #Github Enterprise changes
 Github instance must allow access to crawl raw "README.md" pages.
-Modify "Allow" policy in your https://<MY_GITHUB_ENTERPRISE_URL>/**robots.txt** 
+Modify _"Allow"_ policy in your **https://<MY_GITHUB_ENTERPRISE_URL>/robots.txt** 
 > Allow: /raw/*
 
 
@@ -81,14 +81,14 @@ It creates a ZIP file under "./build/distributions" containing own JAR file + de
 
 
 #To Do
-* Push "Deleted items" within XML. 
+Push "Deleted items" within XML. 
 
-** Solution 1. (Preferred) Move this GSA Feed Client to a GSA Connector 
-** Solution 2. Check previous sent XMLs to know what items are new and which ones deleted
-** Solution 3. Use persistence (MongoDB, file system, ...) to track what's new and hence ... deleted
+* Solution 1. (Preferred) Move this GSA Feed Client to a GSA Connector 
+* Solution 2. Check previous sent XMLs to know what items are new and which ones deleted
+* Solution 3. Use persistence (MongoDB, file system, ...) to track what's new and hence ... deleted
 
-* Include Testing
-Create test classes and add them to gradle
+Include Testing
+* Create test classes and add them to gradle
 
 
 #License
