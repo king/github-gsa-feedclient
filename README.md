@@ -3,9 +3,11 @@ This client feeds Google Search Appliance (GSA) with information coming from a G
 
 **Why don't use GSA built-in Web Crawler?**
 > Because it crawls provided main URL but it also follows any link within that page content so submitting the main "mygithub.com" URL it will crawl ALL our GitHub instance.
+
 **Why don't have all Github contents in GSA?**
 > GitHub Enterprise has its own Web Search engine, so we don't want to have ALL github contents duplicated into GSA.
 > In case of hundreds of repositories we're going to saturate GSA index with millions of new references 
+
 ** So, what Github information is going to appear in GSA?**
 > README.md contents and Organizations & Repository descriptions.
 
@@ -53,12 +55,12 @@ Metadata pushed with the GitHub information:
 
 #Github Enterprise changes
 Github instance must allow access to crawl raw "README.md" pages.
-Modify your https://<MY_GITHUB_ENTERPRISE_URL>/**robots.txt** policy
+Modify "Allow" policy in your https://<MY_GITHUB_ENTERPRISE_URL>/**robots.txt** 
 > Allow: /raw/*
 
 
 #GSA Configuration changes
-In order to allow GSA to crawl raw "README.md" you need to include the following into "Start and Blck URLs > Follow Pattern"
+In order to allow GSA to crawl raw _"README.md"_ you need to include the following into _"Start and Block URLs > Follow Pattern"_
 > regexp:https://<MY_GITHUB_ENTERPRISE_URL>/raw/[^/]*/[^/]*/[^/]*/README.md$
 
 In order to allow GSA to _include_ Organizations and Repositories descriptions you need to include the "fake" URL into same "Follow Pattern" box:
@@ -80,6 +82,7 @@ It creates a ZIP file under "./build/distributions" containing own JAR file + de
 
 #To Do
 * Push "Deleted items" within XML. 
+
 ** Solution 1. (Preferred) Move this GSA Feed Client to a GSA Connector 
 ** Solution 2. Check previous sent XMLs to know what items are new and which ones deleted
 ** Solution 3. Use persistence (MongoDB, file system, ...) to track what's new and hence ... deleted
