@@ -1,0 +1,13 @@
+.DS_Store
+build/
+.metadata/
+.settings/
+.classpath
+.project
+.gradle
+bin/
+# idea generated folder
+.idea/
+*.iml
+*.ipr
+*.iws

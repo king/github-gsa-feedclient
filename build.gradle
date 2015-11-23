@@ -1,0 +1,41 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+
+version = "1.0.0"
+group = "com.king"
+description = "GSA Feed client for Github"
+mainClassName = "com.king.ess.gsa.GithubGSAFeedClient"
+
+// Get dependencies from Maven Central
+repositories {
+    mavenCentral()
+}
+
+// Feed client dependencies
+dependencies {
+    compile "org.slf4j:slf4j-api:1.7.12"
+    compile "org.slf4j:slf4j-simple:1.7.12"
+    compile "org.apache.httpcomponents:httpclient:4.3.6"
+    compile "org.apache.httpcomponents:httpmime:4.3.6"
+	compile "org.json:json:20140107"
+	compile "commons-io:commons-io:2.4"    
+}
+
+// It creates a JAR file with proper manifest 
+jar () {
+	manifest {
+        attributes 'Implementation-Title': project.description,  
+        	'Implementation-Version': version,
+        	'Main-Class': mainClassName
+    }
+}
+
+// Task to RUN accepting Application arguments (appArgs)
+run () {
+    classpath = sourceSets.main.runtimeClasspath
+	main = mainClassName
+	if ( project.hasProperty("appArgs") ) {
+		args Eval.me(appArgs)
+	}
+}
