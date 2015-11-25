@@ -8,10 +8,10 @@ package com.king.ess.gsa;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.StringTokenizer;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -20,6 +20,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper class to gather information through GitHub API 
@@ -57,10 +59,13 @@ public class GithubAPIClient {
 	
 	
 	// GitHub API methods (https://developer.github.com/v3/)
-	private static String API_PREFIX    = "api/v3/";
-	private static String PAGINATION    = "?per_page=10000";  // Prevent pagination
-	private static String GET_USERS_API = API_PREFIX + "users" + PAGINATION;
-	private static String GET_ORGS_API  = API_PREFIX + "organizations" + PAGINATION;
+	private static String HEADER_LINK_ELEMENT = "Link";
+	private static String HEADER_LINK_DELIM   = ",";
+	private static String HEADER_LINK_NEXT    = "rel=\"next\"";
+	private static String API_PREFIX          = "api/v3/";
+	private static String ELEMENTS_PER_PAGE   = "?per_page=100";  // WARNING!!. Max number of elements x page is 100.
+	private static String GET_USERS_API       = API_PREFIX + "users" + ELEMENTS_PER_PAGE;
+	private static String GET_ORGS_API        = API_PREFIX + "organizations" + ELEMENTS_PER_PAGE;
 
 	
 	// Github URL paths
@@ -139,17 +144,69 @@ public class GithubAPIClient {
 	
 	/**
 	 * It submits an HTTP Request to given URL and returns contents into 
-	 * a JSON Array Object
+	 * a JSON Array Object.
 	 * 
+	 *   WARNING!! 
+	 *   This method paginates to retrieve ALL results as it's supposed to be a list.
+	 *   GitHub creates a HEADER in response with the URL for "NEXT" (in case of more pages) 
+	 *    and "FIRST" (in case not the 1st page).
+	 *   That's an example: 
+	 *       <https://myGitHub.com/api/v3/users?per_page=100&since=240>; rel="next", <https://myGitHub.com/api/v3/users{?since}>; rel="first"
+	 *       
 	 * @param githubApiUrl GitHub API URL
 	 * 
 	 * @return JSON Array Object with retrieved information
 	 */
 	private JSONArray getGitHubAPIArrayInformation(String githubApiUrl){
-		String httpInfo = getGitHubAPIInformation(githubApiUrl);
-		if (httpInfo != null) 
-			return new JSONArray(httpInfo);
-		return null;
+    	JSONArray retArray    = null;
+		String sbPageObj      = null;
+		HttpEntity pageEntity = null;
+		String nextPageURL    = null;
+		int status            = -1;
+		HttpClient client     = HttpClientBuilder.create().build();
+		
+		try {
+			HttpGet getPageRequest;
+			getPageRequest = new HttpGet(githubApiUrl);
+
+			HttpResponse getPageResponse = client.execute(getPageRequest);
+			
+			// Get next page URL from Header
+			Header linkHeader = getPageResponse.getFirstHeader(HEADER_LINK_ELEMENT);
+			if (linkHeader != null) {
+				StringTokenizer stToken = new StringTokenizer(linkHeader.getValue(), HEADER_LINK_DELIM);
+				while(stToken.hasMoreTokens() && nextPageURL == null) {
+					String token = stToken.nextToken();
+					if (token.contains(HEADER_LINK_NEXT)) {
+					  nextPageURL = token.substring(1, token.indexOf(">"));
+					}
+				}
+			}
+				
+			pageEntity = getPageResponse.getEntity();
+
+			sbPageObj = IOUtils.toString(pageEntity.getContent());
+
+			status = getPageResponse.getStatusLine().getStatusCode();
+		
+			if (status == RETURN_CODE_OK)
+				retArray = new JSONArray(sbPageObj);
+			else
+				log.error("GitHub API (" + githubApiUrl + ") returned " + status);
+		} catch (Exception e) {
+			log.error("Exception "+ e.getMessage() + " in HTTP request " + githubApiUrl);
+		}
+		finally {
+			if (pageEntity != null) {
+				try {
+					EntityUtils.consume(pageEntity);
+				} catch (IOException e) {}
+			}
+		}
+		// If there are more pages then ... concatenate to this array the results coming from next page 
+		if (nextPageURL != null) 
+			retArray = concatArray(retArray, getGitHubAPIArrayInformation(nextPageURL));
+		return retArray;
 	}
 	
 	/**
@@ -161,23 +218,10 @@ public class GithubAPIClient {
 	 * @return JSON Object with retrieved information
 	 */
 	private JSONObject getGitHubAPIObjectInformation(String githubApiUrl){
-		String httpInfo = getGitHubAPIInformation(githubApiUrl);
-		if (httpInfo != null) 
-			return new JSONObject(httpInfo);
-		return null;
-	}
-	
-	/**
-	 * It submits an HTTP Request to given URL and returns contents into String
-	 * 
-	 * @param githubApiUrl GitHub API URL
-	 * 
-	 * @return String "JSON-formatted" with received information
-	 */
-	private String getGitHubAPIInformation(String githubApiUrl){
+		JSONObject retObject = null;
     	HttpClient client = HttpClientBuilder.create().build();
 
-		String pageObj = null;
+		String sPageObj = null;
 		HttpEntity pageEntity = null;
 		int status = -1;
 
@@ -186,16 +230,18 @@ public class GithubAPIClient {
 			getPageRequest = new HttpGet(githubApiUrl);
 
 			HttpResponse getPageResponse = client.execute(getPageRequest);
+				
 			pageEntity = getPageResponse.getEntity();
 
-			pageObj = IOUtils.toString(pageEntity.getContent());
+			sPageObj = IOUtils.toString(pageEntity.getContent());
 
 			status = getPageResponse.getStatusLine().getStatusCode();
 		
-			if (status != RETURN_CODE_OK) {
-				pageObj = null;
+			if (status == RETURN_CODE_OK) 
+				retObject = new JSONObject(sPageObj);
+			else
+				retObject = new JSONObject(sPageObj);
 				log.error("GitHub API (" + githubApiUrl + ") returned " + status);
-			}
 		} catch (Exception e) {
 			log.error("Exception "+ e.getMessage() + " in HTTP request " + githubApiUrl);
 		}
@@ -206,7 +252,7 @@ public class GithubAPIClient {
 				} catch (IOException e) {}
 			}
 		}
-		return pageObj;
+		return retObject;
 	}
 	
 	/**
@@ -363,5 +409,22 @@ public class GithubAPIClient {
 				ret = retObj.toString();
 		}
 		return ret;
+	}
+	
+	/**
+	 * It concatenates 2 JSON Arrays
+	 * 
+	 * @param jsArrayA 1st Array
+	 * @param jsArrayB 2nd Array 
+	 * 
+	 * @return  Concatenated JSONArray
+	 */
+	private JSONArray concatArray(JSONArray jsArrayA, JSONArray jsArrayB) {
+	    JSONArray result = jsArrayA!=null?jsArrayA:new JSONArray();
+	    if (jsArrayB != null) {
+	        for (int i = 0; i < jsArrayB.length(); i++) 
+	            result.put(jsArrayB.get(i));
+	    }
+	    return result;
 	}
 }
