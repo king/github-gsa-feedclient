@@ -261,7 +261,7 @@ public class GSADocumentFormatter {
 	public boolean addRepositoryReadmeRecord(GithubRepo repo){
 		boolean bAdded = false;
 		// If Repository has a README file then ...
-		if (repo.getReadme() != null) {
+		if (repo.hasReadme()) {
 			// Add Record element
 			Element record = getRecordElement(repo.getReadme().getRawURL(), 
 					repo.getReadme().getHtmlURL(), MIME_HTML);
