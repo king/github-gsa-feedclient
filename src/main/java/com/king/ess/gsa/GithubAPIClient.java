@@ -240,7 +240,6 @@ public class GithubAPIClient {
 			if (status == RETURN_CODE_OK) 
 				retObject = new JSONObject(sPageObj);
 			else
-				retObject = new JSONObject(sPageObj);
 				log.error("GitHub API (" + githubApiUrl + ") returned " + status);
 		} catch (Exception e) {
 			log.error("Exception "+ e.getMessage() + " in HTTP request " + githubApiUrl);
